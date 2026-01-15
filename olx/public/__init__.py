@@ -18,7 +18,7 @@ from fake_useragent import UserAgent
 
 
 class OlxPublic:
-    def __init__(self, full_response=False, use_fake_ua=False):
+    def __init__(self, full_response=False, use_fake_ua=False, proxy: str = None):
         self.url = "https://www.olx.pl"
         self.headers = {}
         self.full_response = full_response
@@ -26,6 +26,7 @@ class OlxPublic:
         self._seo = Seo(self.public_api_call)
         self.use_fake_ua = use_fake_ua
         self.ua = UserAgent() if use_fake_ua else None
+        self.proxy = proxy
 
     def public_api_call(
         self, endpoint: str, extra_headers: dict = None, *args, **kwargs
@@ -38,7 +39,11 @@ class OlxPublic:
         if self.use_fake_ua and self.ua:
             headers["User-Agent"] = self.ua.random
 
-        return requests.get(url=url, headers=headers, *args, **kwargs)
+        proxies = None
+        if self.proxy:
+            proxies = {"http": self.proxy, "https": self.proxy}
+
+        return requests.get(url=url, headers=headers, proxies=proxies, *args, **kwargs)
 
     def get_offers(
         self,
