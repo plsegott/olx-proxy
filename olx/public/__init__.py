@@ -29,7 +29,7 @@ class OlxPublic:
         self.proxy = proxy
 
     def public_api_call(
-        self, endpoint: str, extra_headers: dict = None, *args, **kwargs
+        self, endpoint: str, extra_headers: dict = None, use_proxy: bool = True, *args, **kwargs
     ):
         url = self.url + endpoint
         headers = self.headers
@@ -40,7 +40,7 @@ class OlxPublic:
             headers["User-Agent"] = self.ua.random
 
         proxies = None
-        if self.proxy:
+        if use_proxy and self.proxy:
             proxies = {"http": self.proxy, "https": self.proxy}
 
         return requests.get(url=url, headers=headers, proxies=proxies, *args, **kwargs)
@@ -54,6 +54,7 @@ class OlxPublic:
         sort_by: Literal["created_at:desc", "created_at:asc"] = "created_at:desc",
         extra_params: dict = None,
         user_id: int = None,
+        use_proxy: bool = True,
     ) -> FetchOffersResponse | List[Offer]:
         endpoint = "/api/v1/offers/"
         if url:
@@ -70,33 +71,34 @@ class OlxPublic:
             params["category_id"] = category_id
         if user_id:
             params["user_id"] = user_id
-        response = self.public_api_call(endpoint, params=params)
+        response = self.public_api_call(endpoint, use_proxy=use_proxy, params=params)
         result = from_dict(FetchOffersResponse, response.json())
         if self.full_response:
             return result
         else:
             return result.data
 
-    def get_offer(self, offer_id: int):
+    def get_offer(self, offer_id: int, use_proxy: bool = True):
         """Get offer by id
 
         Args:
             offer_id (int): ID of the offer
+            use_proxy (bool): Whether to use proxy for this request (default: True)
 
         Returns:
             full_response - (SingleOfferResponse): Full response object (models.offers.offers.SingleOfferResponse)
             else (models.offers.offers.Offer): Offer object (models.offers.offers.Offer)
         """
         endpoint = f"/api/v1/offers/{offer_id}/"
-        response = self.public_api_call(endpoint)
+        response = self.public_api_call(endpoint, use_proxy=use_proxy)
         return from_dict(SingleOfferResponse, response.json())
 
-    def get_suggested_offers(self, offer_id: int):
+    def get_suggested_offers(self, offer_id: int, use_proxy: bool = True):
         endpoint = f"/api/v1/offers/{offer_id}/suggested/"
-        response = self.public_api_call(endpoint)
+        response = self.public_api_call(endpoint, use_proxy=use_proxy)
         return from_dict(SuggestedResponse, response.json())
 
-    def get_offer_filters(self):
+    def get_offer_filters(self, use_proxy: bool = True):
         """
         Lists filters for all categories
             Returns:
@@ -104,7 +106,7 @@ class OlxPublic:
                 data.data is a dict where every data.data[key] is a list of filter objects (List[models.offers.filters.Filter])
         """
         endpoint = "/api/v1/offers/metadata/filters"
-        response = self.public_api_call(endpoint)
+        response = self.public_api_call(endpoint, use_proxy=use_proxy)
         data = response.json()
         new_data = dict()
         for filter_name in data["data"]:
@@ -115,7 +117,7 @@ class OlxPublic:
         data["data"] = new_data
         return from_dict(FiltersResponse, data)
 
-    def get_breadcrumbs(self, category_id: int = None, offer_id: int = None):
+    def get_breadcrumbs(self, category_id: int = None, offer_id: int = None, use_proxy: bool = True):
         assert category_id or offer_id, "Provide category_id or offer_id argument"
         assert not (
             category_id and offer_id
@@ -128,7 +130,7 @@ class OlxPublic:
                 params["category_id"] = category_id
         else:
             endpoint = f"/api/v1/offers/{offer_id}/breadcrumbs/"
-        response = self.public_api_call(endpoint, params=params)
+        response = self.public_api_call(endpoint, use_proxy=use_proxy, params=params)
         return from_dict(BreadcrumbResponse, response.json())
 
     # Property accessors for specialized functionality
